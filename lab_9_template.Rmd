@@ -48,8 +48,7 @@ homes = read_csv("slo_homes.csv")
 #View(homes)
 # b. Filter to only include cities "San Luis Obispo", "Santa Maria-Orcutt", "Atascadero", and "Arroyo Grande", and call this new subset 'homes_sub':
 homes_sub = homes %>% 
-  filter(City == "San Luis Obispo"|"Santa Maria-Orcutt"|"Atascadero"|"Arroyo Grande")
-
+  filter(City == "San Luis Obispo"|City =="Santa Maria-Orcutt"|City =="Atascadero"|City == "Arroyo Grande")
 
 ```
 
@@ -86,8 +85,9 @@ Or another question: Overall relationship between home square footage and price,
 
 # a. Relationship between square footage and price
 by_sqft <- ggplot(homes_sub, aes(x = SqFt, y = Price)) +
-  geom_point(aes(color = City, pch = Status), alpha = 0.5) +
-  facet_wrap(~Status)
+  geom_point(aes(color = City, pch = Status), alpha = 0.5) + #alpha makes it slightly tanspartent 
+  facet_wrap(~Status)+
+  theme_classic()
 
 by_sqft
 
