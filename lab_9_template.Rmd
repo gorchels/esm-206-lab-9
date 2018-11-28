@@ -111,10 +111,14 @@ Use summary() to view the model output and statistics.
 ```{r saturated}
 
 # a. Saturated model: 
-
+homes_lm1 = lm(Price~City+Bedrooms+Bathrooms+SqFt+PricePerSqFt+Status, data = homes_sub)
 
 # b. Model summary:
+homes_lm1
 
+#This is full of problems. For example, the number of bedrooms decreases the price. Also not being forclosed decreases the price. 
+
+summary(homes_lm1)
 ```
 
 The next model: Exclude price per square foot, and bedrooms/bathrooms (since these are largely explained by square footage...)
@@ -122,29 +126,36 @@ The next model: Exclude price per square foot, and bedrooms/bathrooms (since the
 ```{r subset}
 
 # a. Updated model with variables City, SqFt, and Status:
-
+homes_lm2 = lm(Price~City+Bathrooms+SqFt+Status, data = homes_sub)
+homes_lm2
 # b. Model summary:
-
+summary(homes_lm2)
 ```
 
 Wait...but what if I wanted everything to be with respect to a Regular sale status? Then I need to change my factor levels. We've done this before, here we'll use a different function (fct_relevel) from *forcats* package in the tidyverse. 
 
 ```{r fct_relevel}
 
-# a. Set Status to class 'factor'
-
+# a. Set Status to class 'factor' #can't use forcats if stored as a character 
+homes_sub$Status = factor(homes_sub$Status)
 
 # b. Check to ensure it's a factor now
 
+#class(homes_sub$Status)
 
 # c. Check levels:
 
-
+#levels(homes_sub$Status)
+#shows it's doing it alphabetically 
 # d. Reassign reference level of "Status" to "Regular":
-
+#fct_relevel() function in forcats (remember ?fct_relevel)
+homes_sub$Status = fct_relevel(homes_sub$Status, "Regular")
+#Regular is now first, and other levels are alphabetically behind it
 
 # e. Now run the regression again - same equation, but now the reference level is different (Status = Regular): 
 
+homes_lm3 = lm(Price~City+SqFt+Status+Bathrooms, data = homes_sub)
+homes_lm3
 
 
 ```
@@ -161,9 +172,9 @@ Then we can evaluate model diagnostics using the plot() function:
 ```{r diagnostics}
 
 # a. Model diagnostics:
-
+plot(homes_lm3)
 ```
-
+It may look heterosedastic at first, but only a few points are affecting that relationship. 
 ###6. Model comparison by Akaike Information Criterion
 
 The AIC is a quantitative metric for model "optimization" that balances complexity with model fit. The best models are the ones that fit the data as well as possible, as simply as possible. Recall: lower AIC value indicates a *more optimal* balance - **BUT STATISTICS IS NO SUBSTITUTE FOR JUDGEMENT!!!**
@@ -171,18 +182,23 @@ The AIC is a quantitative metric for model "optimization" that balances complexi
 ```{r AIC}
 
 # a. AIC values for each model
-
+full_aic = AIC(homes_lm1)
+final_aic = AIC(homes_lm3)
+full_aic
+final_aic
 # Answer: which would you pick? 
+#homes_lm1 if ONLY looking at the AIC value 
+#homes_lm3
 
 ```
 
 ###7. Regression tables with *stargazer*
 
 ```{r stargazer, results = 'asis'}
-
+#lucky for us stargazer exists 
 # a. Prepare a nice regression table:
 
-
+stargazer(homes_lm1, homes_lm3, type = "html")
 
 # Note: If you want to work with this in Word, save to html, open, copy and paste into Word. 
 
@@ -224,7 +240,11 @@ df_new <- data.frame(City = rep(c("San Luis Obispo",
                                     "Foreclosure",
                                     "Short Sale"), 
                                   times = 12, 
-                                  each = 20))
+                                  each = 20),
+                     Bathrooms = rep(seq(from = 1,
+                                        to = 6,
+                                        length = 20)))
+#View(df_new)
 
 ```
 
@@ -233,10 +253,12 @@ Make predictions for the new data using predict():
 ```{r predict}
 
 # a. Make predictions using the new data frame:
+price_predict <-predict(homes_lm3, newdata = df_new, se.fit = TRUE, interval = "confidence")
 
 # b. Bind predictions to the data to make it actually useful:
 
-
+predict_df = data.frame(df_new, price_predict)
+#View(predict_df)
 
 ```
 
@@ -245,8 +267,13 @@ Then visualize it!
 ```{r graph, echo = FALSE}
 
 # Create a line graph with square footage on the x-axis, predicted price on y-axis, with color dependent on City and facet_wrapped by sale status (follow along):
+predict_graph = ggplot(predict_df, aes(x = SqFt, y = fit.fit))+
+  geom_line(aes(color = City))+
+  geom_point(data = homes_sub, aes(x = SqFt, y = Price), alpha = "0.5")+
+  facet_wrap(~Status)+
+  theme_classic()
 
-
+predict_graph
 ```
 
 END LAB
